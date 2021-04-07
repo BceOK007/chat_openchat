@@ -7,5 +7,5 @@ public interface AuthService {
      * Если учетка есть, то вернет никнейм.
      * @return никнейм, если есть совпадение по логину и паролю, null, если нет совпадения
      */
-    String detNicknameByLoginAndPassword(String login, String password);
+    String getNicknameByLoginAndPassword(String login, String password);
 }

@@ -33,7 +33,7 @@ public class ClientHandler {
 
                         if(str.startsWith("/auth")) {
                             String[] token = str.split("\\s+");
-                            String newNick = server.getAuthService().detNicknameByLoginAndPassword(token[1], token[2]);
+                            String newNick = server.getAuthService().getNicknameByLoginAndPassword(token[1], token[2]);
                             if (newNick != null) {
                                 nickname = newNick;
                                 sendMsg("/auth_ok " + nickname);
@@ -50,11 +50,30 @@ public class ClientHandler {
                     while (true) {
                         String str = in.readUTF();
 
-                        if (str.equals("/end")) {
-                            out.writeUTF("/end");
-                            break;
+                        if (str.startsWith("/")) {
+
+                            if (str.equals("/end")) {
+                                out.writeUTF("/end");
+                                break;
+                            }
+                            //Отправка сообщения только одному юзеру
+                            if(str.startsWith("/w ")) {
+                                String[] oneMsg = str.split("\\s+", 3);
+                                ClientHandler recipient = server.getRecipient(oneMsg[1]);
+                                //проверяем есть ли указзанный юзер среди подключенных
+                                if(oneMsg.length == 3) {
+                                    if(recipient != null) {
+                                        server.broadcastMsg(this, oneMsg[2], recipient);
+                                    } else {
+                                        sendMsg(String.format("Пользователь с указанным ником %s не в сети", oneMsg[1]));
+                                    }
+                                } else {
+                                    sendMsg("Неправильный формат команды /w");
+                                }
+                            }
+                        } else {
+                            server.broadcastMsg(this, str);
                         }
-                        server.broadcastMsg(this, str);
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
