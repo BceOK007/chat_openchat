@@ -50,10 +50,31 @@ public class Server {
         }
     }
 
+    /**
+     * Отправка сообщения всем подключенным пользователям
+     * @param sender отправитель сообщения
+     * @param msg текст сообщения
+     */
     public void broadcastMsg(ClientHandler sender, String msg){
         String message = String.format("%s: %s", sender.getNickname(), msg);
         for (ClientHandler c : clients) {
             c.sendMsg(message);
+        }
+    }
+
+    /**
+     * Отправка сообщения только отправителю и указанному пользователю
+     * @param sender отправитель
+     * @param msg текст сообщения
+     * @param recipient получатель
+     */
+    public void broadcastMsg(ClientHandler sender, String msg, ClientHandler recipient){
+        String message = String.format("%s: %s", sender.getNickname(), msg);
+        for (ClientHandler c : clients) {
+            //сообщение отправляем только отправителю и указанному получателю
+            if(c.getNickname().equals(sender.getNickname()) || c.getNickname().equals(recipient.getNickname())) {
+                c.sendMsg(message);
+            }
         }
     }
 
@@ -67,5 +88,19 @@ public class Server {
 
     public AuthService getAuthService() {
         return authService;
+    }
+
+    /**
+     * Поиск пользователя в списке подключенных по его нику
+     * @param nickname никнейм искомого пользователя
+     * @return ссылка на найденого пользователя, при нейдачном поиске null
+     */
+    public ClientHandler getRecipient(String nickname){
+        for (ClientHandler c : clients) {
+            if(c.getNickname().equals(nickname)) {
+                return c;
+            }
+        }
+        return null;
     }
 }
