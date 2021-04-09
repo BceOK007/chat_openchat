@@ -12,6 +12,7 @@ public class ClientHandler {
     private DataOutputStream out;
 
     private String nickname;
+    private String login;
 
     public ClientHandler(Server server, Socket socket) {
         try{
@@ -28,20 +29,43 @@ public class ClientHandler {
 
                         if (str.equals("/end")) {
                             out.writeUTF("/end");
-                            break;
+                            throw new RuntimeException("Клиент решил отключиться");
                         }
 
-                        if(str.startsWith("/auth")) {
+                        //аутентификация
+                        if (str.startsWith("/auth")) {
                             String[] token = str.split("\\s+");
+                            if (token.length < 3){
+                                continue;
+                            }
                             String newNick = server.getAuthService().detNicknameByLoginAndPassword(token[1], token[2]);
                             if (newNick != null) {
-                                nickname = newNick;
-                                sendMsg("/auth_ok " + nickname);
-                                server.subscribe(this);
-                                System.out.println("Client authenticated. nick: " + nickname + " Address: " + socket.getRemoteSocketAddress());
-                                break;
+                                login = token[1];
+                                if (!server.isLoginAuthenticated(login)) {
+                                    nickname = newNick;
+                                    sendMsg("/auth_ok " + nickname);
+                                    server.subscribe(this);
+                                    System.out.println("Client authenticated. nick: " + nickname + " Address: " + socket.getRemoteSocketAddress());
+                                    break;
+                                } else {
+                                    sendMsg("С этим логином уже авторизовались");
+                                }
                             } else {
                                 sendMsg("Неверный логин / пароль");
+                            }
+                        }
+
+                        //регистрация
+                        if (str.startsWith("/reg")) {
+                            String[] token = str.split("\\s+", 4);
+                            if (token.length < 4){
+                                continue;
+                            }
+                            boolean b = server.getAuthService().registration(token[1], token[2], token[3]);
+                            if(b) {
+                                sendMsg("/reg_ok");
+                            } else {
+                                sendMsg("/reg_no");
                             }
                         }
                     }
@@ -50,12 +74,21 @@ public class ClientHandler {
                     while (true) {
                         String str = in.readUTF();
 
-                        if (str.equals("/end")) {
-                            out.writeUTF("/end");
-                            break;
+                        if (str.startsWith("/")) {
+                            if (str.equals("/end")) {
+                                out.writeUTF("/end");
+                                break;
+                            }
+                            if (str.startsWith("/w")) {
+                                String[] token = str.split("\\s+", 3);
+                                server.privateMsg(this, token[1], token[2]);
+                            }
+                        } else {
+                            server.broadcastMsg(this, str);
                         }
-                        server.broadcastMsg(this, str);
                     }
+                } catch (RuntimeException e) {
+                    System.out.println(e.getMessage());
                 } catch (IOException e) {
                     e.printStackTrace();
                 } finally {
@@ -84,5 +117,9 @@ public class ClientHandler {
 
     public String getNickname() {
         return nickname;
+    }
+
+    public String getLogin() {
+        return login;
     }
 }
