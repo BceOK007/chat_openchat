@@ -4,6 +4,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 
 public class ClientHandler {
     private Server server;
@@ -23,6 +24,11 @@ public class ClientHandler {
 
             new Thread(() -> {
                 try {
+                    /*Установка таймаута, максимальное время молчания,
+                     * после которого будет брошено исключение SocketTimeoutException
+                     * */
+                    socket.setSoTimeout(120_000);//включаем таймаут бездействия
+
                     //цикл аутентификации
                     while (true) {
                         String str = in.readUTF();
@@ -35,7 +41,7 @@ public class ClientHandler {
                         //аутентификация
                         if (str.startsWith("/auth")) {
                             String[] token = str.split("\\s+");
-                            if (token.length < 3){
+                            if (token.length < 3) {
                                 continue;
                             }
                             String newNick = server.getAuthService().detNicknameByLoginAndPassword(token[1], token[2]);
@@ -46,6 +52,7 @@ public class ClientHandler {
                                     sendMsg("/auth_ok " + nickname);
                                     server.subscribe(this);
                                     System.out.println("Client authenticated. nick: " + nickname + " Address: " + socket.getRemoteSocketAddress());
+                                    socket.setSoTimeout(0); //отключаем таймаут бездействия
                                     break;
                                 } else {
                                     sendMsg("С этим логином уже авторизовались");
@@ -58,11 +65,11 @@ public class ClientHandler {
                         //регистрация
                         if (str.startsWith("/reg")) {
                             String[] token = str.split("\\s+", 4);
-                            if (token.length < 4){
+                            if (token.length < 4) {
                                 continue;
                             }
                             boolean b = server.getAuthService().registration(token[1], token[2], token[3]);
-                            if(b) {
+                            if (b) {
                                 sendMsg("/reg_ok");
                             } else {
                                 sendMsg("/reg_no");
@@ -86,6 +93,13 @@ public class ClientHandler {
                         } else {
                             server.broadcastMsg(this, str);
                         }
+                    }
+                } catch (SocketTimeoutException e) {
+                    //запрашиваем у сервера отключение
+                    try {
+                        out.writeUTF("/end");
+                    } catch (IOException ioException) {
+                        ioException.printStackTrace();
                     }
                 } catch (RuntimeException e) {
                     System.out.println(e.getMessage());
