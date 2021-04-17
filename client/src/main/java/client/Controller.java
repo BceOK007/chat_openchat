@@ -144,6 +144,13 @@ public class Controller implements Initializable {
                                     }
                                 });
                             }
+
+                            //изменяем титул у окна и никнайм
+                            if (str.startsWith("/changeNick_ok")) {
+                                String[] token = str.split("\\s+", 2);
+                                nickname = token[1];
+                                setTitle(nickname);
+                            }
                         } else {
                             textArea.appendText(str + "\n");
                         }
@@ -221,6 +228,10 @@ public class Controller implements Initializable {
 
             regControler = fxmlLoader.getController();
             regControler.setController(this);
+
+            regControler.loginField.clear();
+            regControler.passwordField.clear();
+            regControler.nickField.clear();
         } catch (IOException e) {
             e.printStackTrace();
         }

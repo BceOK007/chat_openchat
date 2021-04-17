@@ -6,6 +6,10 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.List;
 import java.util.Scanner;
 import java.util.Vector;
@@ -19,13 +23,21 @@ public class Server {
     private List<ClientHandler> clients;
     private AuthService authService;
 
+    private static Connection databaseConnection;
+    private static Statement stmt;
+
     public Server() {
         clients = new CopyOnWriteArrayList<>();
-        authService = new SimpleAuthService();
+//        authService = new SimpleAuthService();
 
         try {
             server = new ServerSocket(PORT);
             System.out.println("Server started");
+
+            //Коннектимся к БД
+            connectDatabase();
+            authService = new DatabaseAuthService(databaseConnection, stmt);
+            System.out.println("Connection database");
 
             while(true){
                 socket = server.accept();
@@ -36,7 +48,13 @@ public class Server {
 
         } catch (IOException e) {
             e.printStackTrace();
+        } catch (SQLException e) {
+            System.out.println("Failed connect to database");
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
         } finally {
+            discinnectDatabase();//закрываем соединение с БД
             try {
                 socket.close();
             } catch (IOException e) {
@@ -106,6 +124,29 @@ public class Server {
 
         for (ClientHandler c : clients) {
             c.sendMsg(msg);
+        }
+    }
+
+    private void connectDatabase() throws ClassNotFoundException, SQLException {
+        Class.forName("org.sqlite.JDBC");
+        databaseConnection = DriverManager.getConnection("jdbc:sqlite:database.db");
+        stmt = databaseConnection.createStatement();
+    }
+
+    private void discinnectDatabase() {
+        try {
+            if(stmt != null) {
+                stmt.close();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        try {
+            if(databaseConnection != null) {
+                databaseConnection.close();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
 }
