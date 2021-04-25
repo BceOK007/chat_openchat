@@ -56,6 +56,9 @@ public class Controller implements Initializable {
     private Stage regStage;
     private  RegControler regControler;
 
+    private String login;
+    private FileHistoryService fileHistoryService = new FileHistoryService();
+
     public void setAuthenticated(boolean authenticated) {
         this.authenticated = authenticated;
         authPanel.setVisible(!authenticated);
@@ -67,6 +70,7 @@ public class Controller implements Initializable {
 
         if(!authenticated) {
             nickname = "";
+            fileHistoryService.close();
         }
         setTitle(nickname);
         textArea.clear();
@@ -109,6 +113,8 @@ public class Controller implements Initializable {
                             if(str.startsWith("/auth_ok")) {
                                 nickname = str.split("\\s+")[1];
                                 setAuthenticated(true);
+
+                                textArea.appendText(fileHistoryService.loadLast100Message(login));
 
                                 break;
                             }
@@ -153,6 +159,7 @@ public class Controller implements Initializable {
                             }
                         } else {
                             textArea.appendText(str + "\n");
+                            fileHistoryService.saveHistoryRow(str + "\n");
                         }
                     }
                 } catch (IOException e) {
@@ -190,6 +197,8 @@ public class Controller implements Initializable {
             connect();
         }
         String msg = String.format("/auth %s %s", loginField.getText().trim(), passwordField.getText().trim());
+
+        login = loginField.getText().trim();
 
         try {
             out.writeUTF(msg);
