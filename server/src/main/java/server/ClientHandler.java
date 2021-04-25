@@ -5,6 +5,10 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
 
 public class ClientHandler {
     private Server server;
@@ -14,6 +18,9 @@ public class ClientHandler {
 
     private String nickname;
     private String login;
+
+    private static Connection connection;
+    private static Statement stmt;
 
     public ClientHandler(Server server, Socket socket) {
         try{
@@ -44,7 +51,7 @@ public class ClientHandler {
                             if (token.length < 3) {
                                 continue;
                             }
-                            String newNick = server.getAuthService().detNicknameByLoginAndPassword(token[1], token[2]);
+                            String newNick = server.getAuthService().getNicknameByLoginAndPassword(token[1], token[2]);
                             if (newNick != null) {
                                 login = token[1];
                                 if (!server.isLoginAuthenticated(login)) {
@@ -86,9 +93,26 @@ public class ClientHandler {
                                 out.writeUTF("/end");
                                 break;
                             }
+                            //приватное сообщение
                             if (str.startsWith("/w")) {
                                 String[] token = str.split("\\s+", 3);
                                 server.privateMsg(this, token[1], token[2]);
+                            }
+                            //смена ника
+                            if (str.startsWith("/cn")) {
+                                String[] token = str.split("\\s+", 2);
+                                if (token.length < 2) {
+                                    continue;
+                                }
+                                boolean b = server.getAuthService().changeNickname(this.nickname,token[1]);
+                                if (b) {
+                                    sendMsg("/changeNick_ok " + token[1]);
+                                    sendMsg("Никнейм успешно сменен на " + token[1]);
+                                    this.nickname = token[1];
+                                    server.broadcastClientList();
+                                } else {
+                                    sendMsg("Не удалось сенить нийкнайм на " + token[1] + ". Возможно он занят.");
+                                }
                             }
                         } else {
                             server.broadcastMsg(this, str);
@@ -104,6 +128,8 @@ public class ClientHandler {
                 } catch (RuntimeException e) {
                     System.out.println(e.getMessage());
                 } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (SQLException e) {
                     e.printStackTrace();
                 } finally {
                     server.unsubscribe(this);
