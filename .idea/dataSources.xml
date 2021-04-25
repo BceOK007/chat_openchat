@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
-    <data-source source="LOCAL" name="datebase" uuid="7f0c1f07-a91f-4682-962a-f5d268b90144">
+    <data-source source="LOCAL" name="database" uuid="911e5a11-3422-4f18-b121-f29a4c250b3f">
       <driver-ref>sqlite.xerial</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
-      <jdbc-url>jdbc:sqlite:C:\Users\artro\IdeaProjects\homeworks\chat_openchat\datebase.db</jdbc-url>
+      <jdbc-url>jdbc:sqlite:C:\Users\artro\IdeaProjects\homeworks\chat_openchat\database.db</jdbc-url>
       <working-dir>$ProjectFileDir$</working-dir>
       <libraries>
         <library>

@@ -14,6 +14,8 @@ import java.util.List;
 import java.util.Scanner;
 import java.util.Vector;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class Server {
     private static ServerSocket server;
@@ -25,6 +27,8 @@ public class Server {
 
     private static Connection databaseConnection;
     private static Statement stmt;
+
+    private ExecutorService executorService = Executors.newCachedThreadPool();
 
     public Server() {
         clients = new CopyOnWriteArrayList<>();
@@ -43,7 +47,7 @@ public class Server {
                 socket = server.accept();
                 System.out.println(socket.getLocalSocketAddress());
                 System.out.println("Client connect: "+ socket.getRemoteSocketAddress());
-                new ClientHandler(this, socket);
+                new ClientHandler(this, socket, executorService);
             }
 
         } catch (IOException e) {
@@ -54,7 +58,12 @@ public class Server {
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         } finally {
-            discinnectDatabase();//закрываем соединение с БД
+            //закрываем соединение с БД
+            discinnectDatabase();
+
+            //закрываем сервис
+            executorService.shutdown();
+
             try {
                 socket.close();
             } catch (IOException e) {
